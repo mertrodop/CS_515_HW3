@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from dataclasses import dataclass
 from torchvision import models
@@ -29,6 +30,12 @@ class TransferOption1(nn.Module):
     """
 
     def __init__(self, config: Transfer_Config) -> None:
+        """Load pretrained backbone, freeze all weights, replace final FC layer.
+
+        Args:
+            config: Specifies backbone (``'resnet18'`` or ``'vgg16'``) and
+                number of output classes.
+        """
         super().__init__()
 
         if config.backbone == "resnet18":
@@ -66,7 +73,15 @@ class TransferOption1(nn.Module):
         self._freeze_bn()
         return self
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Pass *x* through the frozen backbone and fine-tuned FC head.
+
+        Args:
+            x: Image tensor of shape ``(B, 3, 224, 224)``.
+
+        Returns:
+            Logit tensor of shape ``(B, num_classes)``.
+        """
         return self.model(x)
 
 
@@ -81,6 +96,12 @@ class TransferOption2(nn.Module):
     """
 
     def __init__(self, config: Transfer_Config) -> None:
+        """Load pretrained backbone and adapt it for 32×32 CIFAR-10 input.
+
+        Args:
+            config: Specifies backbone (``'resnet18'`` or ``'vgg16'``) and
+                number of output classes.
+        """
         super().__init__()
 
         if config.backbone == "resnet18":
@@ -102,7 +123,15 @@ class TransferOption2(nn.Module):
         else:
             raise ValueError(f"Unknown backbone: {config.backbone}")
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Pass *x* through the fully fine-tuned backbone.
+
+        Args:
+            x: Image tensor of shape ``(B, 3, 32, 32)``.
+
+        Returns:
+            Logit tensor of shape ``(B, num_classes)``.
+        """
         return self.model(x)
 
 

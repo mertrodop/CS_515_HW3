@@ -27,6 +27,13 @@ class VGG(nn.Module):
         norm: Callable[..., nn.Module] = nn.BatchNorm2d,
         num_class: int = 10,
     ) -> None:
+        """Build VGG feature extractor and classifier for the given depth.
+
+        Args:
+            depth: VGG variant — ``'11'``, ``'13'``, ``'16'``, or ``'19'``.
+            norm: Normalization layer constructor. Default: ``nn.BatchNorm2d``.
+            num_class: Number of output classes. Default: 10.
+        """
         super().__init__()
         self.features = self.make_layers_vgg(depth, norm)
 

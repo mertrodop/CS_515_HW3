@@ -3,11 +3,33 @@ import torch.nn.functional as F
 
 
 class LambdaLayer(nn.Module):
-    def __init__(self, lambd):
+    """Wraps an arbitrary callable as an ``nn.Module``.
+
+    Used to apply zero-padding shortcuts (option A) in ResNet without
+    defining a separate named class.
+
+    Args:
+        lambd: Any callable that maps a tensor to a tensor.
+    """
+
+    def __init__(self, lambd) -> None:
+        """Store the callable.
+
+        Args:
+            lambd: Callable applied to the input tensor in :meth:`forward`.
+        """
         super(LambdaLayer, self).__init__()
         self.lambd = lambd
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the wrapped callable to *x*.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Output tensor produced by ``self.lambd(x)``.
+        """
         return self.lambd(x)
 
 class BasicBlock(nn.Module):
@@ -58,7 +80,16 @@ class BasicBlock(nn.Module):
     """
   
     expansion = 1 # For BasicBlock, output channels = channels * expansion = channels
-    def __init__(self, in_channels, channels, stride=1,norm=nn.BatchNorm2d, option='B'):
+    def __init__(self, in_channels: int, channels: int, stride: int = 1, norm=nn.BatchNorm2d, option: str = 'B') -> None:
+        """Build the two-conv residual block with optional projection shortcut.
+
+        Args:
+            in_channels: Number of input channels.
+            channels: Number of output channels.
+            stride: Stride for the first convolution. Default: 1.
+            norm: Normalization layer constructor. Default: ``nn.BatchNorm2d``.
+            option: Shortcut type — ``'A'`` for zero-padding, ``'B'`` for 1×1 conv projection.
+        """
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, channels, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = norm(channels)
@@ -83,7 +114,15 @@ class BasicBlock(nn.Module):
                 )
                 # (1, 16, 32, 32) → (1, 32, 16, 16) after 1×1 convolution with stride=2 and output channels=32.
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the residual block to *x*.
+
+        Args:
+            x: Input tensor of shape ``(B, in_channels, H, W)``.
+
+        Returns:
+            Output tensor of shape ``(B, channels, H_out, W_out)``.
+        """
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
@@ -143,7 +182,15 @@ class ResNet(nn.Module):
     [2] https://github.com/KaimingHe/deep-residual-networks
     
     """
-    def __init__(self, block, num_blocks, norm=nn.BatchNorm2d, num_classes=10):
+    def __init__(self, block, num_blocks: list, norm=nn.BatchNorm2d, num_classes: int = 10) -> None:
+        """Build all residual stages and the classification head.
+
+        Args:
+            block: Residual block class (e.g. ``BasicBlock``).
+            num_blocks: Number of blocks per stage, e.g. ``[2, 2, 2, 2]``.
+            norm: Normalization layer constructor. Default: ``nn.BatchNorm2d``.
+            num_classes: Number of output classes. Default: 10.
+        """
         super(ResNet, self).__init__()
         self.in_channels = 64
 
@@ -156,7 +203,19 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.linear = nn.Linear(512*block.expansion, num_classes)
 
-    def _make_layer(self, block, channels, num_blocks, norm, stride):
+    def _make_layer(self, block: nn.Module, channels: int, num_blocks: int, norm: nn.Module, stride: int) -> nn.Sequential:
+        """Build one residual stage consisting of *num_blocks* blocks.
+
+        Args:
+            block: Residual block class (e.g. ``BasicBlock``).
+            channels: Number of output channels for every block in this stage.
+            num_blocks: Number of blocks to stack.
+            norm: Normalization layer constructor passed to each block.
+            stride: Stride for the first block; subsequent blocks use stride 1.
+
+        Returns:
+            ``nn.Sequential`` containing all blocks for the stage.
+        """
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
@@ -164,7 +223,15 @@ class ResNet(nn.Module):
             self.in_channels = channels * block.expansion
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run a forward pass through the full ResNet.
+
+        Args:
+            x: Input image tensor of shape ``(B, 3, H, W)``.
+
+        Returns:
+            Logit tensor of shape ``(B, num_classes)``.
+        """
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)

@@ -25,6 +25,17 @@ def get_params() -> dict:
                         help="Number of blocks per ResNet layer (default: 2 2 2 2 = ResNet-18)")
     parser.add_argument("--label_smoothing", type=float, default=0.0,
                         help="Label smoothing epsilon (0.0 = standard CE, 0.1 = Szegedy et al.)")
+    # AugMix / CIFAR-10-C arguments
+    parser.add_argument("--use-augmix", action="store_true", default=False,
+                        help="Enable AugMix data augmentation during CIFAR-10 training.")
+    parser.add_argument("--augmix-alpha", type=float, default=1.0,
+                        help="Dirichlet/Beta concentration parameter for AugMix (default: 1.0).")
+    parser.add_argument("--augmix-severity", type=int, default=3, choices=[1, 2, 3, 4, 5],
+                        help="Augmentation operation severity for AugMix (default: 3).")
+    parser.add_argument("--save-path", type=str, default="best_model.pth",
+                        help="Path to save/load the best model checkpoint (default: best_model.pth).")
+    parser.add_argument("--cifar10c-path", type=str, default=None,
+                        help="Path to the CIFAR-10-C directory containing .npy corruption files.")
 
     args = parser.parse_args()
 
@@ -66,7 +77,7 @@ def get_params() -> dict:
         # Misc
         "seed":         42,
         "device":       args.device,
-        "save_path":    "best_model.pth",
+        "save_path":    args.save_path,
         "log_interval": 100,
 
         # CLI
@@ -74,4 +85,12 @@ def get_params() -> dict:
 
         # Label smoothing
         "label_smoothing": args.label_smoothing,
+
+        # AugMix
+        "use_augmix":      args.use_augmix,
+        "augmix_alpha":    args.augmix_alpha,
+        "augmix_severity": args.augmix_severity,
+
+        # CIFAR-10-C evaluation
+        "cifar10c_path":   args.cifar10c_path,
     }

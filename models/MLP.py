@@ -26,6 +26,14 @@ class MLP(nn.Module):
         num_classes: int,
         dropout: float = 0.3,
     ) -> None:
+        """Build the stacked FC blocks and output layer.
+
+        Args:
+            input_size: Number of input features.
+            hidden_sizes: Width of each hidden layer.
+            num_classes: Number of output classes.
+            dropout: Dropout probability after each hidden layer.
+        """
         super().__init__()
         layers: list[nn.Module] = []
         in_dim = input_size
@@ -72,6 +80,13 @@ class MLP2(nn.Module):
         hidden_dims: list[int] = [512, 256],
         num_classes: int = 10,
     ) -> None:
+        """Build hidden layers and the output layer.
+
+        Args:
+            input_dim: Number of input features. Default: 784.
+            hidden_dims: Width of each hidden layer.
+            num_classes: Number of output classes. Default: 10.
+        """
         super().__init__()
 
         layers: list[nn.Module] = []
